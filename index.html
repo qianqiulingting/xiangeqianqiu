@@ -338,9 +338,11 @@
 
   async function loadMessages() {
     const { data, error } = await db
-      .from('shared_space')
-      .select('*')
-      .order('created_at', { ascending: true });
+  .from('shared_space')
+  .select('*')
+  .order('created_at', { ascending: false })
+  .limit(20)
+  .then(res => ({ ...res, data: res.data?.reverse() }));
 
     messagesEl.innerHTML = '';
 
