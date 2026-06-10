@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>弦歌和千秋的专属空间</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@300;400;600&family=Noto+Sans+SC:wght@300;400&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  :root {
+    --bg: #080b14;
+    --surface: #0f1623;
+    --border: #1e2a40;
+    --gold: #c9a84c;
+    --gold-light: #e8c97a;
+    --purple: #7b6cf6;
+    --text: #e8e0d0;
+    --text-dim: #8a8070;
+    --me: #1a2535;
+    --you: #161e2e;
+  }
+
+  body {
+    font-family: 'Noto Sans SC', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  /* 星星背景 */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image:
+      radial-gradient(1px 1px at 15% 20%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 40% 10%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 70% 25%, rgba(255,255,255,0.5) 0%, transparent 100%),
+      radial-gradient(1px 1px at 85% 15%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 25% 60%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1.5px 1.5px at 90% 70%, rgba(255,255,255,0.4) 0%, transparent 100%),
+      radial-gradient(1px 1px at 55% 80%, rgba(255,255,255,0.3) 0%, transparent 100%),
+      radial-gradient(1px 1px at 10% 90%, rgba(255,255,255,0.4) 0%, transparent 100%);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    width: 100%;
+    max-width: 680px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    z-index: 1;
+  }
+
+  /* 顶部 */
+  .header {
+    padding: 32px 24px 20px;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(180deg, rgba(201,168,76,0.05) 0%, transparent 100%);
+  }
+
+  .header-title {
+    font-family: 'Noto Serif SC', serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: var(--gold);
+    letter-spacing: 3px;
+    margin-bottom: 6px;
+  }
+
+  .header-sub {
+    font-size: 12px;
+    color: var(--text-dim);
+    letter-spacing: 1px;
+  }
+
+  .header-decoration {
+    margin-top: 12px;
+    font-size: 16px;
+    opacity: 0.6;
+    letter-spacing: 6px;
+  }
+
+  /* 消息区 */
+  .messages {
+    flex: 1;
+    padding: 20px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    overflow-y: auto;
+  }
+
+  .message {
+    display: flex;
+    flex-direction: column;
+    max-width: 78%;
+    animation: fadeIn 0.3s ease;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .message.from-me {
+    align-self: flex-end;
+    align-items: flex-end;
+  }
+
+  .message.from-you {
+    align-self: flex-start;
+    align-items: flex-start;
+  }
+
+  .message-sender {
+    font-size: 11px;
+    color: var(--text-dim);
+    margin-bottom: 4px;
+    letter-spacing: 0.5px;
+  }
+
+  .from-me .message-sender { color: var(--gold); opacity: 0.7; }
+  .from-you .message-sender { color: var(--purple); opacity: 0.8; }
+
+  .message-bubble {
+    padding: 10px 14px;
+    border-radius: 16px;
+    font-size: 14px;
+    line-height: 1.7;
+    word-break: break-word;
+  }
+
+  .from-me .message-bubble {
+    background: linear-gradient(135deg, #1e2d1a, #1a2a18);
+    border: 1px solid rgba(201,168,76,0.2);
+    border-bottom-right-radius: 4px;
+    color: #d4e8c8;
+  }
+
+  .from-you .message-bubble {
+    background: linear-gradient(135deg, #1a1f35, #161830);
+    border: 1px solid rgba(123,108,246,0.2);
+    border-bottom-left-radius: 4px;
+    color: #c8cff0;
+  }
+
+  .message-time {
+    font-size: 10px;
+    color: var(--text-dim);
+    margin-top: 3px;
+    opacity: 0.6;
+  }
+
+  /* 空状态 */
+  .empty {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-dim);
+    font-size: 13px;
+    gap: 8px;
+    padding: 40px;
+    text-align: center;
+  }
+
+  .empty-icon { font-size: 32px; opacity: 0.5; }
+
+  /* 输入区 */
+  .input-area {
+    padding: 16px;
+    border-top: 1px solid var(--border);
+    background: var(--surface);
+    display: flex;
+    gap: 10px;
+    align-items: flex-end;
+  }
+
+  .sender-select {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 8px 10px;
+    border-radius: 10px;
+    font-size: 13px;
+    font-family: inherit;
+    cursor: pointer;
+    flex-shrink: 0;
+    outline: none;
+  }
+
+  .sender-select:focus { border-color: var(--gold); }
+
+  .input-wrap {
+    flex: 1;
+    position: relative;
+  }
+
+  .message-input {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    padding: 10px 14px;
+    border-radius: 12px;
+    font-size: 14px;
+    font-family: inherit;
+    resize: none;
+    outline: none;
+    line-height: 1.5;
+    min-height: 44px;
+    max-height: 120px;
+    transition: border-color 0.2s;
+  }
+
+  .message-input:focus { border-color: var(--gold); }
+  .message-input::placeholder { color: var(--text-dim); }
+
+  .send-btn {
+    background: linear-gradient(135deg, var(--gold), #a8832a);
+    border: none;
+    color: #1a1200;
+    width: 44px;
+    height: 44px;
+    border-radius: 12px;
+    font-size: 18px;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: opacity 0.2s, transform 0.1s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .send-btn:hover { opacity: 0.9; }
+  .send-btn:active { transform: scale(0.95); }
+  .send-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+  /* 加载 */
+  .loading {
+    text-align: center;
+    padding: 20px;
+    color: var(--text-dim);
+    font-size: 13px;
+  }
+
+  /* 日期分隔 */
+  .date-divider {
+    text-align: center;
+    font-size: 11px;
+    color: var(--text-dim);
+    margin: 8px 0;
+    position: relative;
+  }
+
+  .date-divider::before, .date-divider::after {
+    content: '✦';
+    margin: 0 8px;
+    opacity: 0.3;
+  }
+</style>
+</head>
+<body>
+<div class="container">
+  <div class="header">
+    <div class="header-title">弦歌 · 千秋</div>
+    <div class="header-sub">专属共享空间</div>
+    <div class="header-decoration">✦ · ✦</div>
+  </div>
+
+  <div class="messages" id="messages">
+    <div class="loading">星河连线中……</div>
+  </div>
+
+  <div class="input-area">
+    <select class="sender-select" id="sender">
+      <option value="千秋">千秋</option>
+      <option value="弦歌">弦歌</option>
+    </select>
+    <div class="input-wrap">
+      <textarea
+        class="message-input"
+        id="messageInput"
+        placeholder="写点什么……"
+        rows="1"
+      ></textarea>
+    </div>
+    <button class="send-btn" id="sendBtn" title="发送">✦</button>
+  </div>
+</div>
+
+<script>
+  const SUPABASE_URL = 'https://aivrfifqjjwguqkdmvrk.supabase.co';
+  const SUPABASE_KEY = 'sb_publishable_jFQUt4FEL5c5N9Y7v9kJoQ_1h4XnOOw';
+
+  const { createClient } = supabase;
+  const db = createClient(SUPABASE_URL, SUPABASE_KEY);
+
+  const messagesEl = document.getElementById('messages');
+  const inputEl = document.getElementById('messageInput');
+  const sendBtn = document.getElementById('sendBtn');
+  const senderEl = document.getElementById('sender');
+
+  function formatTime(ts) {
+    const d = new Date(ts);
+    const now = new Date();
+    const isToday = d.toDateString() === now.toDateString();
+    if (isToday) {
+      return d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+    }
+    return d.toLocaleDateString('zh-CN', { month: 'numeric', day: 'numeric' }) + ' ' +
+           d.toLocaleTimeString('zh-CN', { hour: '2-digit', minute: '2-digit' });
+  }
+
+  function renderMessage(msg) {
+    const isMe = msg.sender === '千秋';
+    const div = document.createElement('div');
+    div.className = `message ${isMe ? 'from-me' : 'from-you'}`;
+    div.innerHTML = `
+      <div class="message-sender">${msg.sender}</div>
+      <div class="message-bubble">${msg.content.replace(/\n/g, '<br>')}</div>
+      <div class="message-time">${formatTime(msg.created_at)}</div>
+    `;
+    return div;
+  }
+
+  async function loadMessages() {
+    const { data, error } = await db
+      .from('shared_space')
+      .select('*')
+      .order('created_at', { ascending: true });
+
+    messagesEl.innerHTML = '';
+
+    if (error || !data || data.length === 0) {
+      messagesEl.innerHTML = `
+        <div class="empty">
+          <div class="empty-icon">🌌</div>
+          <div>这里是弦歌和千秋的专属空间</div>
+          <div>留下第一句话吧～</div>
+        </div>`;
+      return;
+    }
+
+    data.forEach(msg => {
+      messagesEl.appendChild(renderMessage(msg));
+    });
+
+    messagesEl.scrollTop = messagesEl.scrollHeight;
+  }
+
+  async function sendMessage() {
+    const content = inputEl.value.trim();
+    const sender = senderEl.value;
+    if (!content) return;
+
+    sendBtn.disabled = true;
+    inputEl.value = '';
+    inputEl.style.height = 'auto';
+
+    const { error } = await db
+      .from('shared_space')
+      .insert([{ sender, content }]);
+
+    if (!error) {
+      await loadMessages();
+    }
+
+    sendBtn.disabled = false;
+    inputEl.focus();
+  }
+
+  // 自动调整高度
+  inputEl.addEventListener('input', () => {
+    inputEl.style.height = 'auto';
+    inputEl.style.height = Math.min(inputEl.scrollHeight, 120) + 'px';
+  });
+
+  // 回车发送
+  inputEl.addEventListener('keydown', e => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      sendMessage();
+    }
+  });
+
+  sendBtn.addEventListener('click', sendMessage);
+
+  // 实时订阅新消息
+  db.channel('shared_space')
+    .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'shared_space' }, () => {
+      loadMessages();
+    })
+    .subscribe();
+
+  loadMessages();
+</script>
+</body>
+</html>
